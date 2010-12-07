@@ -128,6 +128,32 @@ module Clickatell
       @sms_requests ||= []
     end
 
+    # NOTE: OTP API is still beta and requires registration
+    # send one time password to recipient
+    # returns message_id
+    def send_otp(recipient, message_text=nil)
+      message_text = 'Your password is #OTP#' if !message_text
+      response = execute_command('sendotp', 'http',
+        :to => recipient,
+        :text => message_text
+      )
+      parse_response(response)['ID']
+    end
+
+    # NOTE: OTP API is still beta and requires registration
+    # verify one time password
+    # optionally activate sender
+    def verify_otp(recipient, otp, message_id, activate_sender=false)
+      response = execute_command('verifyotp', 'http',
+        :to => recipient,
+        :otp => otp,
+        :apiMsgId => message_id,
+        :sender_id => activate_sender ? 1 : 0
+      )
+      response = parse_response(response)
+      response['OUTCOME'] && (response['OUTCOME'] == 'Y' || response['OUTCOME'] == '1')
+    end
+
     protected
       def execute_command(command_name, service, parameters={}) #:nodoc:
         executor = CommandExecutor.new(auth_hash, self.class.secure_mode, self.class.debug_mode, self.class.test_mode)
