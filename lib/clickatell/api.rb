@@ -133,10 +133,10 @@ module Clickatell
     # returns message_id
     def send_otp(recipient, message_text=nil)
       message_text = 'Your password is #OTP#' if !message_text
-      response = execute_command('sendotp', 'http',
+      response = execute_command('sendotp', 'http', {
         :to => recipient,
         :text => message_text
-      )
+      }, true)
       parse_response(response)['ID']
     end
 
@@ -144,19 +144,19 @@ module Clickatell
     # verify one time password
     # optionally activate sender
     def verify_otp(recipient, otp, message_id, activate_sender=false)
-      response = execute_command('verifyotp', 'http',
+      response = execute_command('verifyotp', 'http', {
         :to => recipient,
         :otp => otp,
         :apiMsgId => message_id,
         :sender_id => activate_sender ? 1 : 0
-      )
+      }, true)
       response = parse_response(response)
       response['OUTCOME'] && (response['OUTCOME'] == 'Y' || response['OUTCOME'] == '1')
     end
 
     protected
-      def execute_command(command_name, service, parameters={}) #:nodoc:
-        executor = CommandExecutor.new(auth_hash, self.class.secure_mode, self.class.debug_mode, self.class.test_mode)
+      def execute_command(command_name, service, parameters={}, no_session = false) #:nodoc:
+        executor = CommandExecutor.new(auth_extra_params(no_session), self.class.secure_mode, self.class.debug_mode, self.class.test_mode)
         result = executor.execute(command_name, service, parameters)
 
         (sms_requests << executor.sms_requests).flatten! if self.class.test_mode
@@ -168,18 +168,23 @@ module Clickatell
         Clickatell::Response.parse(raw_response)
       end
 
-      def auth_hash #:nodoc:
-        if @auth_options[:session_id]
+      def auth_extra_params(no_session = false) #:nodoc:
+        credentials = {
+          :user => @auth_options[:username],
+          :password => @auth_options[:password],
+          :api_id => @auth_options[:api_key]
+        }
+
+        if no_session
+          credentials
+        elsif @auth_options[:session_id]
           { :session_id => @auth_options[:session_id] }
         elsif @auth_options[:api_id]
-          { :user => @auth_options[:username],
-            :password => @auth_options[:password],
-            :api_id => @auth_options[:api_key] }
+          credentials
         else
           {}
         end
       end
-
   end
 end
 
