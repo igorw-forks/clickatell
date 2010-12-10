@@ -9,9 +9,12 @@ module Clickatell
       # API instance with the authentication options set to use the
       # resulting session_id.
       def authenticate(api_id, username, password)
-        api = self.new
-        session_id = api.authenticate(api_id, username, password)
-        api.auth_options = { :session_id => session_id }
+        api = self.new({
+          :api_id   => api_id,
+          :username => username,
+          :password => password,
+        })
+        api.authenticate
         api
       end
 
@@ -38,7 +41,7 @@ module Clickatell
 
     # Creates a new API instance using the specified +auth options+.
     # +auth_options+ is a hash containing either a :session_id or
-    # :username, :password and :api_key.
+    # :auth_options.
     #
     # Some API calls (authenticate, ping etc.) do not require any
     # +auth_options+. +auth_options+ can be updated using the accessor methods.
@@ -49,13 +52,9 @@ module Clickatell
     # Authenticates using the specified credentials. Returns
     # a session_id if successful which can be used in subsequent
     # API calls.
-    def authenticate(api_id, username, password)
-      response = execute_command('auth', 'http',
-        :api_id => api_id,
-        :user => username,
-        :password => password
-      )
-      parse_response(response)['OK']
+    def authenticate
+      response = execute_command('auth', 'http', {}, true)
+      @auth_options[:session_id] = parse_response(response)['OK']
     end
 
     # Pings the service with the specified session_id to keep the
@@ -170,9 +169,9 @@ module Clickatell
 
       def auth_extra_params(no_session = false) #:nodoc:
         credentials = {
-          :user => @auth_options[:username],
+          :api_id   => @auth_options[:api_id],
+          :user     => @auth_options[:username],
           :password => @auth_options[:password],
-          :api_id => @auth_options[:api_key]
         }
 
         if no_session
