@@ -149,8 +149,7 @@ module Clickatell
         :apiMsgId => message_id,
         :sender_id => activate_sender ? 1 : 0
       }, true)
-      response = parse_response(response)
-      response['OUTCOME'] && (response['OUTCOME'] == 'Y' || response['OUTCOME'] == '1')
+      parse_response(response)['OK']
     end
 
     protected
