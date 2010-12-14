@@ -131,7 +131,7 @@ module Clickatell
     # send one time password to recipient
     # returns message_id
     def send_otp(recipient, message_text=nil)
-      message_text = 'Your password is #OTP#' if !message_text
+      message_text = 'Your verification password is #OTP#' if !message_text
       response = execute_command('sendotp', 'http', {
         :to => recipient,
         :text => message_text
